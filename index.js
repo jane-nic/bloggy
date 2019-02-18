@@ -1,28 +1,74 @@
-const functions = require('firebase-functions');
-const admin =require('firebase-admin');
-admin.initializeApp();
+const guideList = document.querySelector('.guides');
+const loggedOutLinks =document.querySelectorAll('.logged-out');
+const loggedInLinks =document.querySelectorAll('.logged-in');
+const accountDetails = document.querySelector('.account-details');
+const adminItems = document.querySelectorAll('.admin');
 
-exports.addAdminRole = functions.https.onCall(function(data,context){
-    //check request is made by an admin
-    if(context.auth.token.admin!== true){
-        return {error: 'only admin can add admin suckker!!'}
-    }
-    //get user and add custom claim
-    return admin.auth().getUserByEmail(data.email).then(function(user){
-        return admin.auth().setCustomUserClaims(user.uid,{
-           admin:true 
-        });
-    }).then(function(){
-        return {
-            message:'success! $(data.email) has been made an admin'
+const setupUI=function(user){
+    if (user) {
+        if(user.admin){
+            adminItems.forEach(function(item){
+                return item.style.display ='block'
+            })
         }
+        // account info
+        db.collection('user').doc(user.uid).get().then(function(doc){
+            const html = `
+        <div>Logged in as ${user.email}</div>
+        <div>${doc.data().bio}</div>
+        <div class="pink-text">${user.admin ? 'Admin' : ''}</div>
+         `;
+         accountDetails.innerHTML = html;
+        })
+        
+        // toggle user UI elements
+        loggedInLinks.forEach(function(item){return item.style.display = 'block'} );
+        loggedOutLinks.forEach(function(item){return item.style.display = 'none'});
+
+      } else {
+        adminItems.forEach(function(item){
+            return item.style.display ='none'});
+          //hide account detail
+         accountDetails.innerHTML='';
+        // toggle user elements
+        loggedInLinks.forEach(function(item){return item.style.display = 'none'});
+        loggedOutLinks.forEach(function(item){return item.style.display = 'block'});
+      }
+}
+
+//setup guides
+const setupGuides =function(data){
+
+    if(data.length){
+    let html='';
+    data.forEach(function(doc) {
+        const guide = doc.data();
+        const li = `
+        <li>
+        <div class="collapsible-header grey lighten-4"> ${guide.Title} </div>
+        <div class="collapsible-body white"> ${guide.Content} </div>
+        </li>
+        `;
+        html+=li;
     });
+    guideList.innerHTML = html
+    }
+    else{
+        guideList.innerHTML='<h5 class="center-align">Login to view the blogs</h5>'
+        }
+}
 
-})
+// setup materialize components
+document.addEventListener('DOMContentLoaded', function() {
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//  response.send("Hello from Firebase!");
-// });
+    var modals = document.querySelectorAll('.modal');
+    M.Modal.init(modals);
+  
+    var items = document.querySelectorAll('.collapsible');
+    M.Collapsible.init(items);
+
+   
+  
+  });
+
+ 
